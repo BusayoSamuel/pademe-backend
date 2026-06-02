@@ -93,4 +93,18 @@ export class AsksService {
     const saved = await this.asksRepo.save(ask);
     return toAskResponse(saved);
   }
+
+  async remove(authUserId: string, askId: string): Promise<{ deleted: string }> {
+    const ask = await this.asksRepo.findOne({ where: { id: askId } });
+    if (!ask) {
+      throw new NotFoundException('Ask not found');
+    }
+
+    if (ask.askerId !== authUserId) {
+      throw new ForbiddenException('Only the asker can delete this ask');
+    }
+
+    await this.asksRepo.remove(ask);
+    return { deleted: askId };
+  }
 }

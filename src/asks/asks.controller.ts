@@ -1,4 +1,11 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -44,5 +51,23 @@ export class AsksController {
     @Body() dto: ChooseOfferDto,
   ) {
     return this.asksService.chooseOffer(authUser.id, askId, dto);
+  }
+
+  @Delete(':askId')
+  @ApiOperation({
+    summary: 'Delete an ask',
+    description: 'Only the asker can delete. Related offers are removed (cascade).',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: { deleted: { type: 'string', format: 'uuid' } },
+    },
+  })
+  remove(
+    @CurrentUser() authUser: AuthUser,
+    @Param('askId', ParseUUIDPipe) askId: string,
+  ) {
+    return this.asksService.remove(authUser.id, askId);
   }
 }
