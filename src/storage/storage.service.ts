@@ -14,10 +14,14 @@ export class StorageService {
     path: string,
     body: Buffer,
     contentType: string,
+    options?: { upsert?: boolean },
   ) {
     const { data, error } = await this.supabase.admin.storage
       .from(bucket)
-      .upload(path, body, { contentType, upsert: false });
+      .upload(path, body, {
+        contentType,
+        upsert: options?.upsert ?? false,
+      });
 
     if (error) {
       throw new BadRequestException(error.message);

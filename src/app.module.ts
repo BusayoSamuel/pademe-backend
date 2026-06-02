@@ -7,6 +7,7 @@ import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { StorageModule } from './storage/storage.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     DatabaseModule,
     AuthModule,
     StorageModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
