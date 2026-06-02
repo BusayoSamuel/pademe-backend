@@ -1,10 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../users/entities/user.entity';
 import { SupabaseService } from '../supabase/supabase.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
+  ) {}
 
   async register(dto: RegisterAuthDto) {
     const { data: authData, error: authError } =
@@ -46,5 +57,42 @@ export class AuthService {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
     };
+  }
+
+  async signOut(accessToken: string) {
+    const { error } = await this.supabase.admin.auth.admin.signOut(
+      accessToken,
+      'global',
+    );
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return { message: 'Signed out successfully' };
+  }
+
+  async deleteAccount(userId: string, accessToken: string) {
+    const profile = await this.usersRepo.findOne({ where: { id: userId } });
+    if (profile) {
+      await this.usersRepo.remove(profile);
+    }
+
+    const { error: signOutError } =
+      await this.supabase.admin.auth.admin.signOut(accessToken, 'global');
+    if (signOutError) {
+      throw new BadRequestException(signOutError.message);
+    }
+
+    const { error: deleteError } =
+      await this.supabase.admin.auth.admin.deleteUser(userId);
+
+    if (deleteError) {
+      throw new InternalServerErrorException(
+        deleteError.message ?? 'Failed to delete auth account',
+      );
+    }
+
+    return { message: 'Account deleted successfully' };
   }
 }
