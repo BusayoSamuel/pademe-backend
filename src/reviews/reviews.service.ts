@@ -78,6 +78,7 @@ export class ReviewsService {
     });
 
     const saved = await this.reviewsRepo.save(review);
+    await this.recalculateAverageRating(dto.revieweeId);
     return this.mapReview(saved);
   }
 
@@ -128,6 +129,7 @@ export class ReviewsService {
     }
 
     const saved = await this.reviewsRepo.save(review);
+    await this.recalculateAverageRating(review.revieweeId);
     return this.mapReview(saved);
   }
 
@@ -160,6 +162,24 @@ export class ReviewsService {
     review.photoPath = path;
     const saved = await this.reviewsRepo.save(review);
     return this.mapReview(saved);
+  }
+
+  private async recalculateAverageRating(revieweeId: string): Promise<void> {
+    const result = await this.reviewsRepo
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'avg')
+      .where('review.reviewee_id = :revieweeId', { revieweeId })
+      .getRawOne<{ avg: string | null }>();
+
+    const avg = result?.avg;
+    const user = await this.usersRepo.findOne({ where: { id: revieweeId } });
+    if (!user) {
+      return;
+    }
+
+    user.averageRating =
+      avg === null || avg === undefined ? null : Number(avg).toFixed(2);
+    await this.usersRepo.save(user);
   }
 
   private mapReview(review: Review): ReviewResponseDto {

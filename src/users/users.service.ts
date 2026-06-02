@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { StorageService } from '../storage/storage.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateUserProfileDto } from './dto/create-user-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { PublicUserProfileDto } from './dto/public-user-profile.dto';
 import { toUserResponse, UserResponse } from './user.mapper';
 
 @Injectable()
@@ -19,6 +21,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    @InjectRepository(Ask)
+    private readonly asksRepo: Repository<Ask>,
     private readonly supabase: SupabaseService,
     private readonly storage: StorageService,
   ) {}
@@ -115,6 +119,18 @@ export class UsersService {
 
   getMe(id: string): Promise<UserResponse> {
     return this.findByIdOrFail(id).then((user) => this.mapUser(user));
+  }
+
+  async getPublicProfile(userId: string): Promise<PublicUserProfileDto> {
+    const user = await this.findByIdOrFail(userId);
+    const completedAsksCount = await this.asksRepo.count({
+      where: { doerId: userId, status: AskStatus.Payout },
+    });
+
+    return {
+      ...this.mapUser(user),
+      completedAsksCount,
+    };
   }
 
   private mapUser(user: User): UserResponse {

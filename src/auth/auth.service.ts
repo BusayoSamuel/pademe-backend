@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { SupabaseService } from '../supabase/supabase.service';
+import { LoginDto } from './dto/login.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 
@@ -17,6 +18,26 @@ export class AuthService {
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
   ) {}
+
+  async login(dto: LoginDto) {
+    const { data, error } = await this.supabase.anon.auth.signInWithPassword({
+      email: dto.email,
+      password: dto.password,
+    });
+
+    if (error || !data.user || !data.session) {
+      throw new BadRequestException(
+        error?.message ?? 'Invalid email or password',
+      );
+    }
+
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    };
+  }
 
   async register(dto: RegisterAuthDto) {
     const { data: authData, error: authError } =

@@ -15,6 +15,7 @@ import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
 import { AuthTokensResponseDto } from './dto/auth-tokens-response.dto';
 import { AuthRegisterResponseDto } from './dto/auth-register-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LoginDto } from './dto/login.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { AuthService } from './auth.service';
 
@@ -22,6 +23,17 @@ import { AuthService } from './auth.service';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Post('login')
+  @ApiOperation({
+    summary: 'Sign in',
+    description: 'Returns access and refresh tokens for an existing user.',
+  })
+  @ApiCreatedResponse({ type: AuthRegisterResponseDto })
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
 
   @Public()
   @Post('register')

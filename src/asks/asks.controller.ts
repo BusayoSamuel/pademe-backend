@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -23,6 +24,9 @@ import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
 import { ChooseOfferDto } from './dto/choose-offer.dto';
 import { CompletedAsksCountDto } from './dto/completed-asks-count.dto';
 import { CreateAskDto } from './dto/create-ask.dto';
+import { ListAsksQueryDto } from './dto/list-asks-query.dto';
+import { UpdateAskDto } from './dto/update-ask.dto';
+import { UpdateAskStatusDto } from './dto/update-ask-status.dto';
 import { AskResponseDto } from './dto/ask-response.dto';
 import { AsksService } from './asks.service';
 
@@ -43,6 +47,20 @@ export class AsksController {
     return this.asksService.create(authUser.id, dto);
   }
 
+  @Get('my/jobs')
+  @ApiOperation({ summary: 'List asks where I am the doer' })
+  @ApiOkResponse({ type: AskResponseDto, isArray: true })
+  findMyJobs(@CurrentUser() authUser: AuthUser) {
+    return this.asksService.findMyJobs(authUser.id);
+  }
+
+  @Get('my')
+  @ApiOperation({ summary: 'List asks I posted (asker)' })
+  @ApiOkResponse({ type: AskResponseDto, isArray: true })
+  findMyAsks(@CurrentUser() authUser: AuthUser) {
+    return this.asksService.findMyAsks(authUser.id);
+  }
+
   @Public()
   @Get('completed-count')
   @ApiOperation({
@@ -53,6 +71,52 @@ export class AsksController {
   @ApiOkResponse({ type: CompletedAsksCountDto })
   getCompletedCount(@Query('doerId', ParseUUIDPipe) doerId: string) {
     return this.asksService.countCompletedByDoer(doerId);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'List asks',
+    description: 'Browse asks with optional status filter and pagination.',
+  })
+  @ApiOkResponse({ type: AskResponseDto, isArray: true })
+  findAll(@Query() query: ListAsksQueryDto) {
+    return this.asksService.findAll(query);
+  }
+
+  @Get(':askId')
+  @ApiOperation({ summary: 'Get ask by id' })
+  @ApiOkResponse({ type: AskResponseDto })
+  findOne(@Param('askId', ParseUUIDPipe) askId: string) {
+    return this.asksService.findOne(askId);
+  }
+
+  @Patch(':askId/status')
+  @ApiOperation({
+    summary: 'Update ask status',
+    description:
+      'Advance status one step: waiting→in_conversation→meet_complete→payout. Payout: asker only.',
+  })
+  @ApiOkResponse({ type: AskResponseDto })
+  updateStatus(
+    @CurrentUser() authUser: AuthUser,
+    @Param('askId', ParseUUIDPipe) askId: string,
+    @Body() dto: UpdateAskStatusDto,
+  ) {
+    return this.asksService.updateStatus(authUser.id, askId, dto);
+  }
+
+  @Patch(':askId')
+  @ApiOperation({
+    summary: 'Update ask details',
+    description: 'Asker only, while status is posted.',
+  })
+  @ApiOkResponse({ type: AskResponseDto })
+  update(
+    @CurrentUser() authUser: AuthUser,
+    @Param('askId', ParseUUIDPipe) askId: string,
+    @Body() dto: UpdateAskDto,
+  ) {
+    return this.asksService.update(authUser.id, askId, dto);
   }
 
   @Post(':askId/choose-offer')

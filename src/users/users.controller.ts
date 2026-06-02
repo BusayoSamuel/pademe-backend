@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UploadedFile,
@@ -18,10 +20,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { User as AuthUser } from '@supabase/supabase-js';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
 import { CreateUserProfileDto } from './dto/create-user-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PublicUserProfileDto } from './dto/public-user-profile.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
 
@@ -78,5 +82,13 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.usersService.uploadProfilePhoto(authUser.id, file);
+  }
+
+  @Public()
+  @Get(':userId')
+  @ApiOperation({ summary: 'Get public user profile' })
+  @ApiOkResponse({ type: PublicUserProfileDto })
+  getPublicProfile(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.usersService.getPublicProfile(userId);
   }
 }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Ask } from '../asks/entities/ask.entity';
+import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { OfferResponseDto } from './dto/offer-response.dto';
@@ -109,5 +109,33 @@ export class OffersService {
     offer.note = dto.note;
     const saved = await this.offersRepo.save(offer);
     return toOfferResponse(saved);
+  }
+
+  async remove(
+    authUserId: string,
+    offerId: string,
+  ): Promise<{ deleted: string }> {
+    const offer = await this.offersRepo.findOne({ where: { id: offerId } });
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    if (offer.doerId !== authUserId) {
+      throw new ForbiddenException('Only the doer can withdraw this offer');
+    }
+
+    const ask = await this.asksRepo.findOne({ where: { id: offer.askId } });
+    if (!ask) {
+      throw new NotFoundException('Ask not found');
+    }
+
+    if (ask.status !== AskStatus.Posted) {
+      throw new ConflictException(
+        'Offer can only be withdrawn while ask status is posted',
+      );
+    }
+
+    await this.offersRepo.remove(offer);
+    return { deleted: offerId };
   }
 }

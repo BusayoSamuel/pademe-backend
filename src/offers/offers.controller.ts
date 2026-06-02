@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -65,5 +66,23 @@ export class OffersController {
     @Body() dto: UpdateOfferDto,
   ) {
     return this.offersService.updateNote(authUser.id, id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Withdraw offer',
+    description: 'Doer only, while the ask is still posted.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: { deleted: { type: 'string', format: 'uuid' } },
+    },
+  })
+  remove(
+    @CurrentUser() authUser: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.offersService.remove(authUser.id, id);
   }
 }
