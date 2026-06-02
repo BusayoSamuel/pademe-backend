@@ -26,7 +26,7 @@
 1. **New** → **Web Service** → connect repo.
 2. Settings:
    - **Runtime:** Node
-   - **Build command:** `npm ci && npm run build`
+   - **Build command:** `npm ci --include=dev && npm run build`
    - **Start command:** `npm run start:prod`
    - **Health check path:** `/health`
 3. **Environment** → add variables from `.env.example` (use `NODE_ENV=production`, `NODE_VERSION=20`).
@@ -37,6 +37,14 @@
 - Service **spins down after 15 min** idle; first request may take ~1 min.
 - Upgrade to **Starter ($7/mo)** for always-on.
 - Free plan: **512 MB RAM**, **750 instance hours/month**.
+
+## Build failed: `nest: not found`
+
+Render sets `NODE_ENV=production`, so plain `npm ci` omits devDependencies (including `@nestjs/cli`). Use:
+
+```bash
+npm ci --include=dev && npm run build
+```
 
 ## Verify
 
