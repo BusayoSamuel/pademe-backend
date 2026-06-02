@@ -13,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
@@ -23,6 +24,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
 import { SupabaseService } from '../supabase/supabase.service';
+import { StorageDeletedResponseDto } from './dto/storage-deleted-response.dto';
+import { StorageSignedUrlResponseDto } from './dto/storage-signed-url-response.dto';
+import { StorageUploadResponseDto } from './dto/storage-upload-response.dto';
 import { StorageService } from './storage.service';
 
 @ApiTags('Storage')
@@ -46,6 +50,7 @@ export class StorageController {
       },
     },
   })
+  @ApiCreatedResponse({ type: StorageUploadResponseDto })
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile() file: Express.Multer.File,
@@ -78,6 +83,7 @@ export class StorageController {
   @ApiOperation({ summary: 'Get a signed download URL' })
   @ApiQuery({ name: 'path', required: true })
   @ApiQuery({ name: 'expiresIn', required: false, example: 3600 })
+  @ApiOkResponse({ type: StorageSignedUrlResponseDto })
   async signedUrl(
     @Query('path') path: string,
     @Query('expiresIn') expiresIn?: string,
@@ -92,6 +98,7 @@ export class StorageController {
   @ApiBearerAuth(SWAGGER_BEARER_AUTH)
   @ApiOperation({ summary: 'Delete a file by path' })
   @ApiQuery({ name: 'path', required: true })
+  @ApiOkResponse({ type: StorageDeletedResponseDto })
   async remove(@Query('path') path: string) {
     if (!path) {
       throw new BadRequestException('path query parameter is required');
