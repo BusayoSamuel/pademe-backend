@@ -15,5 +15,8 @@ export default function configuration() {
     storage: {
       defaultBucket: process.env.SUPABASE_STORAGE_BUCKET ?? 'uploads',
     },
+    cors: {
+      origins: process.env.CORS_ORIGINS ?? '',
+    },
   };
 }

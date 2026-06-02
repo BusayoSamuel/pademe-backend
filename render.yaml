@@ -1,0 +1,33 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Connect repo → New Blueprint → select this file, then set secret env vars in the dashboard.
+
+services:
+  - type: web
+    name: pademe-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: '20'
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: 'true'
+      - key: APP_NAME
+        value: pademe-backend
+      - key: SUPABASE_STORAGE_BUCKET
+        value: uploads
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

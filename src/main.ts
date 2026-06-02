@@ -27,7 +27,15 @@ async function bootstrap() {
   const port = config.get<number>('port', 3000);
   const appName = config.get<string>('appName', 'pademe-backend');
 
-  await app.listen(port);
+  const corsOrigins = config.get<string>('cors.origins', '');
+  if (corsOrigins) {
+    app.enableCors({
+      origin: corsOrigins.split(',').map((o) => o.trim()),
+      credentials: true,
+    });
+  }
+
+  await app.listen(port, '0.0.0.0');
   console.log(`${appName} listening on http://localhost:${port}`);
   console.log(`Swagger docs at http://localhost:${port}/api`);
 }
