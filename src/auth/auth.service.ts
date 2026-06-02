@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { SupabaseService } from '../supabase/supabase.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -56,6 +57,24 @@ export class AuthService {
     return {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
+    };
+  }
+
+  async refreshTokens(dto: RefreshTokenDto) {
+    const { data, error } = await this.supabase.anon.auth.refreshSession({
+      refresh_token: dto.refreshToken,
+    });
+
+    if (error || !data.session) {
+      throw new BadRequestException(
+        error?.message ?? 'Invalid or expired refresh token',
+      );
+    }
+
+    return {
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      expiresIn: data.session.expires_in ?? 3600,
     };
   }
 

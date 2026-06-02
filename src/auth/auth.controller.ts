@@ -12,7 +12,9 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import type { RequestWithUser } from './decorators/current-user.decorator';
 import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
 import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
+import { AuthTokensResponseDto } from './dto/auth-tokens-response.dto';
 import { AuthRegisterResponseDto } from './dto/auth-register-response.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { AuthService } from './auth.service';
 
@@ -32,6 +34,18 @@ export class AuthController {
   @ApiCreatedResponse({ type: AuthRegisterResponseDto })
   register(@Body() dto: RegisterAuthDto) {
     return this.authService.register(dto);
+  }
+
+  @Public()
+  @Post('refresh')
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Exchange a valid refresh token for a new access token and refresh token.',
+  })
+  @ApiOkResponse({ type: AuthTokensResponseDto })
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto);
   }
 
   @ApiBearerAuth(SWAGGER_BEARER_AUTH)
