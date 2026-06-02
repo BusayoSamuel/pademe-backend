@@ -7,6 +7,7 @@ import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { StorageModule } from './storage/storage.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { AsksModule } from './asks/asks.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     StorageModule,
     UsersModule,
+    AsksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
