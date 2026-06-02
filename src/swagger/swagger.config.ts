@@ -24,6 +24,7 @@ export function buildSwaggerDocument(): Omit<OpenAPIObject, 'paths'> {
     .addTag('Users', 'User profiles')
     .addTag('Asks', 'Tasks posted by askers for doers')
     .addTag('Offers', 'Doer offers on asks')
+    .addTag('Reviews', 'User reviews (doer or asker)')
     .addTag('Storage', 'File storage (generic uploads)')
     .build();
 }
