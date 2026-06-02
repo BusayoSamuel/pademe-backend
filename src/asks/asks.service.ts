@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConversationsService } from '../conversations/conversations.service';
 import { Offer } from '../offers/entities/offer.entity';
 import { User } from '../users/entities/user.entity';
 import { ChooseOfferDto } from './dto/choose-offer.dto';
@@ -24,6 +25,7 @@ export class AsksService {
     private readonly usersRepo: Repository<User>,
     @InjectRepository(Offer)
     private readonly offersRepo: Repository<Offer>,
+    private readonly conversationsService: ConversationsService,
   ) {}
 
   async create(authUserId: string, dto: CreateAskDto): Promise<AskResponseDto> {
@@ -91,10 +93,14 @@ export class AsksService {
     ask.status = AskStatus.Waiting;
 
     const saved = await this.asksRepo.save(ask);
+    await this.conversationsService.createForAsk(saved);
     return toAskResponse(saved);
   }
 
-  async remove(authUserId: string, askId: string): Promise<{ deleted: string }> {
+  async remove(
+    authUserId: string,
+    askId: string,
+  ): Promise<{ deleted: string }> {
     const ask = await this.asksRepo.findOne({ where: { id: askId } });
     if (!ask) {
       throw new NotFoundException('Ask not found');

@@ -47,8 +47,7 @@ export class AsksController {
   @Get('completed-count')
   @ApiOperation({
     summary: 'Count completed asks for a doer',
-    description:
-      'Returns how many asks the doer completed (status = payout).',
+    description: 'Returns how many asks the doer completed (status = payout).',
   })
   @ApiQuery({ name: 'doerId', required: true, format: 'uuid' })
   @ApiOkResponse({ type: CompletedAsksCountDto })
@@ -74,7 +73,8 @@ export class AsksController {
   @Delete(':askId')
   @ApiOperation({
     summary: 'Delete an ask',
-    description: 'Only the asker can delete. Related offers are removed (cascade).',
+    description:
+      'Only the asker can delete. Related offers are removed (cascade).',
   })
   @ApiOkResponse({
     schema: {
