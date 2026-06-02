@@ -107,4 +107,19 @@ export class AsksService {
     await this.asksRepo.remove(ask);
     return { deleted: askId };
   }
+
+  async countCompletedByDoer(
+    doerId: string,
+  ): Promise<{ doerId: string; completedCount: number }> {
+    const doer = await this.usersRepo.findOne({ where: { id: doerId } });
+    if (!doer) {
+      throw new NotFoundException('Doer not found');
+    }
+
+    const completedCount = await this.asksRepo.count({
+      where: { doerId, status: AskStatus.Payout },
+    });
+
+    return { doerId, completedCount };
+  }
 }
