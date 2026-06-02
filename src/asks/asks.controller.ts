@@ -1,13 +1,15 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import type { User as AuthUser } from '@supabase/supabase-js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
+import { ChooseOfferDto } from './dto/choose-offer.dto';
 import { CreateAskDto } from './dto/create-ask.dto';
 import { AskResponseDto } from './dto/ask-response.dto';
 import { AsksService } from './asks.service';
@@ -27,5 +29,20 @@ export class AsksController {
   @ApiCreatedResponse({ type: AskResponseDto })
   create(@CurrentUser() authUser: AuthUser, @Body() dto: CreateAskDto) {
     return this.asksService.create(authUser.id, dto);
+  }
+
+  @Post(':askId/choose-offer')
+  @ApiOperation({
+    summary: 'Choose an offer (assign doer)',
+    description:
+      'Asker accepts an offer: sets `doerId` from the offer and ask `status` to `waiting`. Ask must be `posted`.',
+  })
+  @ApiOkResponse({ type: AskResponseDto })
+  chooseOffer(
+    @CurrentUser() authUser: AuthUser,
+    @Param('askId', ParseUUIDPipe) askId: string,
+    @Body() dto: ChooseOfferDto,
+  ) {
+    return this.asksService.chooseOffer(authUser.id, askId, dto);
   }
 }
