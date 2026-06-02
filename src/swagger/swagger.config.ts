@@ -23,6 +23,7 @@ export function buildSwaggerDocument(): Omit<OpenAPIObject, 'paths'> {
     .addTag('Auth', 'Supabase authentication (email + password)')
     .addTag('Users', 'User profiles')
     .addTag('Asks', 'Tasks posted by askers for doers')
+    .addTag('Offers', 'Doer offers on asks')
     .addTag('Storage', 'File storage (generic uploads)')
     .build();
 }

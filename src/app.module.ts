@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module';
 import { StorageModule } from './storage/storage.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AsksModule } from './asks/asks.module';
+import { OffersModule } from './offers/offers.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { UsersModule } from './users/users.module';
     StorageModule,
     UsersModule,
     AsksModule,
+    OffersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

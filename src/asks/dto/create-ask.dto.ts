@@ -43,7 +43,9 @@ export class CreateAskDto {
   })
   @IsString()
   @Length(3, 3)
-  @Matches(/^[A-Z]{3}$/, { message: 'currency must be a 3-letter ISO code (e.g. NGN, USD)' })
+  @Matches(/^[A-Z]{3}$/, {
+    message: 'currency must be a 3-letter ISO code (e.g. NGN, USD)',
+  })
   currency: string;
 
   @ApiProperty({ example: '2026-06-15' })
