@@ -18,5 +18,18 @@ export default function configuration() {
     cors: {
       origins: process.env.CORS_ORIGINS ?? '',
     },
+    stripe: {
+      secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+      connectReturnUrl: process.env.STRIPE_CONNECT_RETURN_URL ?? '',
+      connectRefreshUrl: process.env.STRIPE_CONNECT_REFRESH_URL ?? '',
+      connectAppReturnUrl:
+        process.env.STRIPE_CONNECT_APP_RETURN_URL ??
+        'padememobile://stripe-onboarding?return=complete',
+      connectAppRefreshUrl:
+        process.env.STRIPE_CONNECT_APP_REFRESH_URL ??
+        'padememobile://stripe-onboarding?return=refresh',
+    },
   };
 }

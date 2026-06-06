@@ -61,6 +61,12 @@ export class Ask {
   @Column({ name: 'doer_id', type: 'uuid', nullable: true })
   doerId: string | null;
 
+  @Column({ name: 'stripe_product_id', type: 'text', nullable: true })
+  stripeProductId: string | null;
+
+  @Column({ name: 'stripe_price_id', type: 'text', nullable: true })
+  stripePriceId: string | null;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'asker_id' })
   asker: User;

@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 import { buildSwaggerDocument } from './swagger/swagger.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.useGlobalPipes(
     new ValidationPipe({

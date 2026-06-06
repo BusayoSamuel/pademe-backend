@@ -1,4 +1,6 @@
 import { StorageService } from '../storage/storage.service';
+import { toUserStripeSummary } from '../stripe/stripe-connect.mapper';
+import { UserStripeDto } from './dto/user-stripe.dto';
 import { User } from './entities/user.entity';
 
 export type UserResponse = {
@@ -15,6 +17,7 @@ export type UserResponse = {
   profilePhotoPath: string | null;
   profilePhotoUrl: string | null;
   averageRating: number | null;
+  stripe: UserStripeDto;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -43,6 +46,7 @@ export function toUserResponse(
     profilePhotoUrl,
     averageRating:
       user.averageRating === null ? null : Number(user.averageRating),
+    stripe: toUserStripeSummary(user),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

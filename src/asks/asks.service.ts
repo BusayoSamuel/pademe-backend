@@ -3,12 +3,14 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { ConversationsService } from '../conversations/conversations.service';
 import { Offer } from '../offers/entities/offer.entity';
+import { StripeAskProductService } from '../stripe/stripe-ask-product.service';
 import { User } from '../users/entities/user.entity';
 import { ChooseOfferDto } from './dto/choose-offer.dto';
 import { CreateAskDto } from './dto/create-ask.dto';
@@ -37,6 +39,7 @@ export class AsksService {
     @InjectRepository(Offer)
     private readonly offersRepo: Repository<Offer>,
     private readonly conversationsService: ConversationsService,
+    private readonly stripeAskProductService: StripeAskProductService,
   ) {}
 
   async create(authUserId: string, dto: CreateAskDto): Promise<AskResponseDto> {
@@ -63,10 +66,24 @@ export class AsksService {
       status: AskStatus.Posted,
       askerId: dto.askerId,
       doerId: null,
+      stripeProductId: null,
+      stripePriceId: null,
     });
 
     const saved = await this.asksRepo.save(ask);
-    return toAskResponse(saved);
+
+    try {
+      const refs = await this.stripeAskProductService.createForAsk(saved);
+      saved.stripeProductId = refs.productId;
+      saved.stripePriceId = refs.priceId;
+      const withStripe = await this.asksRepo.save(saved);
+      return toAskResponse(withStripe);
+    } catch {
+      await this.asksRepo.remove(saved);
+      throw new InternalServerErrorException(
+        'Failed to create Stripe product for ask',
+      );
+    }
   }
 
   async findAll(query: ListAsksQueryDto): Promise<AskResponseDto[]> {
@@ -131,6 +148,12 @@ export class AsksService {
       );
     }
 
+    const previousPricing = {
+      amount: ask.amount,
+      currency: ask.currency,
+      stripePriceId: ask.stripePriceId,
+    };
+
     if (dto.title !== undefined) ask.title = dto.title;
     if (dto.description !== undefined) ask.description = dto.description;
     if (dto.location !== undefined) ask.location = dto.location;
@@ -140,7 +163,21 @@ export class AsksService {
     if (dto.urgency !== undefined) ask.urgency = dto.urgency;
 
     const saved = await this.asksRepo.save(ask);
-    return toAskResponse(saved);
+
+    try {
+      const refs = await this.stripeAskProductService.syncForAsk(
+        saved,
+        previousPricing,
+      );
+      saved.stripeProductId = refs.productId;
+      saved.stripePriceId = refs.priceId;
+      const withStripe = await this.asksRepo.save(saved);
+      return toAskResponse(withStripe);
+    } catch {
+      throw new InternalServerErrorException(
+        'Failed to sync Stripe product for ask',
+      );
+    }
   }
 
   async updateStatus(
@@ -210,6 +247,14 @@ export class AsksService {
 
     if (ask.askerId !== authUserId) {
       throw new ForbiddenException('Only the asker can delete this ask');
+    }
+
+    try {
+      await this.stripeAskProductService.archiveForAsk(ask);
+    } catch {
+      throw new InternalServerErrorException(
+        'Failed to archive Stripe product for ask',
+      );
     }
 
     await this.asksRepo.remove(ask);

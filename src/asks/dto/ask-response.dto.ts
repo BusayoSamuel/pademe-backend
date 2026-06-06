@@ -38,6 +38,16 @@ export class AskResponseDto {
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   doerId: string | null;
 
+  @ApiPropertyOptional({ nullable: true, example: 'prod_123' })
+  stripeProductId: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 'price_123',
+    description: 'Stripe one-off price ID for asker checkout',
+  })
+  stripePriceId: string | null;
+
   @ApiProperty()
   createdAt: Date;
 

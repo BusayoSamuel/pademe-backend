@@ -6,6 +6,13 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export enum StripeKycStatus {
+  None = 'none',
+  Pending = 'pending',
+  Verified = 'verified',
+  Failed = 'failed',
+}
+
 @Entity({ name: 'users' })
 export class User {
   @PrimaryColumn('uuid')
@@ -49,6 +56,29 @@ export class User {
     nullable: true,
   })
   averageRating: string | null;
+
+  @Column({ name: 'stripe_connect_account_id', type: 'text', nullable: true })
+  stripeConnectAccountId: string | null;
+
+  @Column({
+    name: 'stripe_kyc_status',
+    type: 'text',
+    default: StripeKycStatus.None,
+  })
+  stripeKycStatus: StripeKycStatus;
+
+  @Column({ name: 'stripe_payouts_enabled', type: 'boolean', default: false })
+  stripePayoutsEnabled: boolean;
+
+  @Column({ name: 'stripe_charges_enabled', type: 'boolean', default: false })
+  stripeChargesEnabled: boolean;
+
+  @Column({
+    name: 'stripe_onboarding_completed_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  stripeOnboardingCompletedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

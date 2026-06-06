@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserStripeDto } from './user-stripe.dto';
 
 export class UserResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -39,6 +40,9 @@ export class UserResponseDto {
 
   @ApiPropertyOptional({ nullable: true, example: null })
   averageRating: number | null;
+
+  @ApiProperty({ type: UserStripeDto })
+  stripe: UserStripeDto;
 
   @ApiProperty()
   createdAt: Date;

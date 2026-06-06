@@ -15,6 +15,8 @@ export function toAskResponse(ask: Ask): AskResponseDto {
     status: ask.status,
     askerId: ask.askerId,
     doerId: ask.doerId,
+    stripeProductId: ask.stripeProductId,
+    stripePriceId: ask.stripePriceId,
     createdAt: ask.createdAt,
     updatedAt: ask.updatedAt,
   };

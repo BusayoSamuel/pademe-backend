@@ -12,7 +12,7 @@ import { StorageService } from '../storage/storage.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateUserProfileDto } from './dto/create-user-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { StripeKycStatus, User } from './entities/user.entity';
 import { PublicUserProfileDto } from './dto/public-user-profile.dto';
 import { toUserResponse, UserResponse } from './user.mapper';
 
@@ -62,6 +62,11 @@ export class UsersService {
       area: dto.area,
       profilePhotoPath: null,
       averageRating: null,
+      stripeConnectAccountId: null,
+      stripeKycStatus: StripeKycStatus.None,
+      stripePayoutsEnabled: false,
+      stripeChargesEnabled: false,
+      stripeOnboardingCompletedAt: null,
     });
 
     const saved = await this.usersRepo.save(user);

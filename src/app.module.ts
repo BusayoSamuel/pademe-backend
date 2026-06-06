@@ -11,6 +11,7 @@ import { AsksModule } from './asks/asks.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { OffersModule } from './offers/offers.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { StripeModule } from './stripe/stripe.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     ConversationsModule,
     OffersModule,
     ReviewsModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
