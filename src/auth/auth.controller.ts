@@ -17,6 +17,9 @@ import { AuthRegisterResponseDto } from './dto/auth-register-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthService } from './auth.service';
 
 @ApiTags('Auth')
@@ -46,6 +49,48 @@ export class AuthController {
   @ApiCreatedResponse({ type: AuthRegisterResponseDto })
   register(@Body() dto: RegisterAuthDto) {
     return this.authService.register(dto);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Request password reset OTP',
+    description:
+      'Sends a one-time password reset code to the given email via Supabase. ' +
+      'Use `POST /auth/verify-reset-otp` to verify the code before setting a new password.',
+  })
+  @ApiOkResponse({ type: AuthMessageResponseDto })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('verify-reset-otp')
+  @ApiOperation({
+    summary: 'Verify password reset OTP',
+    description:
+      'Validates the reset code and returns a short-lived session. ' +
+      'Use the `accessToken` as Bearer auth for `POST /auth/reset-password`.',
+  })
+  @ApiOkResponse({ type: AuthRegisterResponseDto })
+  verifyResetOtp(@Body() dto: VerifyResetOtpDto) {
+    return this.authService.verifyResetOtp(dto);
+  }
+
+  @ApiBearerAuth(SWAGGER_BEARER_AUTH)
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Set new password',
+    description:
+      'Sets a new password after OTP verification. ' +
+      'Requires the `accessToken` returned by `POST /auth/verify-reset-otp`.',
+  })
+  @ApiOkResponse({ type: AuthMessageResponseDto })
+  resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.authService.resetPassword(req.accessToken, dto);
   }
 
   @Public()

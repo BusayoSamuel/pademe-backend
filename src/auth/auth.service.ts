@@ -10,6 +10,9 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -79,6 +82,57 @@ export class AuthService {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
     };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const { error } = await this.supabase.anon.auth.resetPasswordForEmail(
+      dto.email,
+    );
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      message:
+        'If an account exists for this email, a password reset code has been sent.',
+    };
+  }
+
+  async verifyResetOtp(dto: VerifyResetOtpDto) {
+    const { data, error } = await this.supabase.anon.auth.verifyOtp({
+      email: dto.email,
+      token: dto.otp,
+      type: 'recovery',
+    });
+
+    if (error || !data.user || !data.session) {
+      throw new BadRequestException(
+        error?.message ?? 'Invalid or expired reset code',
+      );
+    }
+
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    };
+  }
+
+  async resetPassword(accessToken: string, dto: ResetPasswordDto) {
+    const client = this.supabase.clientForUser(accessToken);
+    const { error } = await client.auth.updateUser({
+      password: dto.password,
+    });
+
+    if (error) {
+      throw new BadRequestException(
+        error.message ?? 'Failed to update password',
+      );
+    }
+
+    return { message: 'Password updated successfully' };
   }
 
   async refreshTokens(dto: RefreshTokenDto) {
