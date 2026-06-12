@@ -26,7 +26,11 @@ export function buildSwaggerDocument(): Omit<OpenAPIObject, 'paths'> {
     .addTag('Conversations', 'Chat between asker and doer')
     .addTag('Offers', 'Doer offers on asks')
     .addTag('Reviews', 'User reviews (doer or asker)')
-    .addTag('Stripe', 'Stripe Connect onboarding and webhooks')
+    .addTag(
+      'Stripe',
+      'Stripe Connect onboarding (`/stripe/connect`), mobile Payment Sheet payout (`/stripe/payment-sheet`), ' +
+        'onboarding redirects (`/stripe/onboarding`), and webhooks (`/stripe/webhooks`, excluded from docs).',
+    )
     .addTag('Storage', 'File storage (generic uploads)')
     .build();
 }

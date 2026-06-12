@@ -10,6 +10,7 @@ import type { User as AuthUser } from '@supabase/supabase-js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SWAGGER_BEARER_AUTH } from '../swagger/swagger.config';
 import { ConfirmPaymentSheetDto } from './dto/confirm-payment-sheet.dto';
+import { ConfirmPaymentSheetResponseDto } from './dto/confirm-payment-sheet-response.dto';
 import { CreatePaymentSheetDto } from './dto/create-payment-sheet.dto';
 import { PaymentSheetResponseDto } from './dto/payment-sheet-response.dto';
 import { StripePaymentService } from './stripe-payment.service';
@@ -22,9 +23,11 @@ export class StripePaymentController {
 
   @Post()
   @ApiOperation({
-    summary: 'Create Stripe Payment Sheet params for an ask payout',
+    summary: 'Create Payment Sheet params for an ask',
     description:
-      'Asker only. Ask must be in meet_complete status. Returns PaymentIntent client secret for the mobile Payment Sheet.',
+      'Asker only. Ask must be `meet_complete` with an assigned doer who has completed Stripe Connect onboarding. ' +
+      'Creates a Connect destination charge (ask budget + 10% service fee) and returns params for the mobile Payment Sheet. ' +
+      'After the client payment succeeds, call `POST /stripe/payment-sheet/confirm`.',
   })
   @ApiCreatedResponse({ type: PaymentSheetResponseDto })
   createPaymentSheet(
@@ -38,17 +41,9 @@ export class StripePaymentController {
   @ApiOperation({
     summary: 'Confirm ask payout after Payment Sheet succeeds',
     description:
-      'Verifies the PaymentIntent succeeded and advances the ask to payout status.',
+      'Asker only. Verifies the PaymentIntent succeeded, matches it to the ask, and advances ask status to `payout`.',
   })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        askId: { type: 'string', format: 'uuid' },
-        status: { type: 'string', example: 'payout' },
-      },
-    },
-  })
+  @ApiOkResponse({ type: ConfirmPaymentSheetResponseDto })
   confirmPaymentSheet(
     @CurrentUser() authUser: AuthUser,
     @Body() dto: ConfirmPaymentSheetDto,

@@ -23,7 +23,8 @@ export class StripeController {
   @ApiOperation({
     summary: 'Start Connect Express onboarding',
     description:
-      'Creates a Stripe Express connected account if needed and returns a hosted onboarding URL for KYC and payout setup.',
+      'Doer onboarding. Creates a Stripe Express connected account if needed and returns a hosted onboarding URL for KYC and payout setup. ' +
+      'After Stripe redirects to the backend return URL, the app is opened via the configured deep link.',
   })
   @ApiCreatedResponse({ type: OnboardingLinkResponseDto })
   createOnboardingLink(@CurrentUser() authUser: AuthUser) {
@@ -34,7 +35,8 @@ export class StripeController {
   @ApiOperation({
     summary: 'Refresh Connect onboarding status',
     description:
-      'Fetches the latest KYC/payout status from Stripe and updates the user profile.',
+      'Fetches the latest KYC/payout/charges status from Stripe and updates the user profile. ' +
+      'Use after onboarding or when checking whether a doer can receive payments.',
   })
   @ApiOkResponse({ type: ConnectStatusResponseDto })
   getConnectStatus(@CurrentUser() authUser: AuthUser) {
