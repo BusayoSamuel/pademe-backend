@@ -17,8 +17,13 @@ import { PaymentSheetResponseDto } from './dto/payment-sheet-response.dto';
 import { STRIPE_CLIENT } from './stripe.constants';
 import { toStripeUnitAmount } from './stripe-amount.util';
 import type { StripeClient } from './stripe.types';
+import Stripe from 'stripe';
 
 const SERVICE_FEE_RATE = 0.1;
+
+function calculateServiceFee(amount: number): number {
+  return Math.round(amount * SERVICE_FEE_RATE);
+}
 
 @Injectable()
 export class StripePaymentService {
@@ -50,7 +55,7 @@ export class StripePaymentService {
     }
 
     const budget = Number(ask.amount);
-    const serviceFee = Math.round(budget * SERVICE_FEE_RATE);
+    const serviceFee = calculateServiceFee(budget);
     const total = budget + serviceFee;
     const currency = ask.currency.toLowerCase();
 
@@ -59,7 +64,7 @@ export class StripePaymentService {
       paymentIntent = await this.stripe.paymentIntents.create({
         amount: toStripeUnitAmount(total.toFixed(2), currency),
         currency,
-        payment_method_types: ['card', 'apple_pay'],
+        payment_method_types: ['card'],
         application_fee_amount: toStripeUnitAmount(serviceFee.toFixed(2), currency),
         transfer_data: {
           destination: doer.stripeConnectAccountId,
@@ -70,7 +75,11 @@ export class StripePaymentService {
           doerId: ask.doerId ?? '',
         },
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new BadRequestException(error.message);
+      }
+
       throw new InternalServerErrorException('Failed to create Stripe payment intent');
     }
 

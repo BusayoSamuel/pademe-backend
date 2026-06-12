@@ -26,7 +26,7 @@ export class StripePaymentController {
     summary: 'Create Payment Sheet params for an ask',
     description:
       'Asker only. Ask must be `meet_complete` with an assigned doer who has completed Stripe Connect onboarding. ' +
-      'Creates a Connect destination charge (ask budget + 10% service fee) limited to card and Apple Pay. ' +
+      'Creates a Connect destination charge (ask budget + 10% service fee) for card and Apple Pay via the mobile Payment Sheet. ' +
       'Returns params for the mobile Payment Sheet, including `merchantCountryCode` for Apple Pay. ' +
       'After the client payment succeeds, call `POST /stripe/payment-sheet/confirm`.',
   })
