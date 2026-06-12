@@ -19,12 +19,6 @@ import { toStripeUnitAmount } from './stripe-amount.util';
 import type { StripeClient } from './stripe.types';
 import Stripe from 'stripe';
 
-const SERVICE_FEE_RATE = 0.1;
-
-function calculateServiceFee(amount: number): number {
-  return Math.round(amount * SERVICE_FEE_RATE);
-}
-
 @Injectable()
 export class StripePaymentService {
   constructor(
@@ -54,18 +48,15 @@ export class StripePaymentService {
       throw new BadRequestException('Assigned doer cannot receive payments yet');
     }
 
-    const budget = Number(ask.amount);
-    const serviceFee = calculateServiceFee(budget);
-    const total = budget + serviceFee;
+    const amount = Number(ask.amount);
     const currency = ask.currency.toLowerCase();
 
     let paymentIntent;
     try {
       paymentIntent = await this.stripe.paymentIntents.create({
-        amount: toStripeUnitAmount(total.toFixed(2), currency),
+        amount: toStripeUnitAmount(amount.toFixed(2), currency),
         currency,
         payment_method_types: ['card'],
-        application_fee_amount: toStripeUnitAmount(serviceFee.toFixed(2), currency),
         transfer_data: {
           destination: doer.stripeConnectAccountId,
         },
