@@ -18,4 +18,10 @@ export class PaymentSheetResponseDto {
     description: 'Client secret for initializing the mobile Payment Sheet.',
   })
   paymentIntentClientSecret: string;
+
+  @ApiProperty({
+    example: 'GB',
+    description: 'ISO country code for Apple Pay in the mobile Payment Sheet.',
+  })
+  merchantCountryCode: string;
 }

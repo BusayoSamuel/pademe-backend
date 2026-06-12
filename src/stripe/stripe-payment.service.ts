@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { toIsoCountryCode } from '../common/country-iso.util';
 import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { User } from '../users/entities/user.entity';
 import { ConfirmPaymentSheetDto } from './dto/confirm-payment-sheet.dto';
@@ -36,7 +37,9 @@ export class StripePaymentService {
     askId: string,
   ): Promise<PaymentSheetResponseDto> {
     const ask = await this.findPayableAsk(authUserId, askId);
+    const asker = await this.findUserOrFail(ask.askerId);
     const doer = await this.findDoerOrFail(ask.doerId);
+    const merchantCountryCode = this.toMerchantCountryCode(asker.country, ask.currency);
 
     if (!doer.stripeConnectAccountId) {
       throw new BadRequestException('Assigned doer has not connected Stripe payouts yet');
@@ -56,7 +59,7 @@ export class StripePaymentService {
       paymentIntent = await this.stripe.paymentIntents.create({
         amount: toStripeUnitAmount(total.toFixed(2), currency),
         currency,
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card', 'apple_pay'],
         application_fee_amount: toStripeUnitAmount(serviceFee.toFixed(2), currency),
         transfer_data: {
           destination: doer.stripeConnectAccountId,
@@ -84,6 +87,7 @@ export class StripePaymentService {
       publishableKey,
       paymentIntentId: paymentIntent.id,
       paymentIntentClientSecret: paymentIntent.client_secret,
+      merchantCountryCode,
     };
   }
 
@@ -91,7 +95,18 @@ export class StripePaymentService {
     authUserId: string,
     dto: ConfirmPaymentSheetDto,
   ): Promise<{ askId: string; status: AskStatus }> {
-    const ask = await this.findPayableAsk(authUserId, dto.askId);
+    const ask = await this.findAskerOwnedAsk(authUserId, dto.askId);
+
+    if (ask.status === AskStatus.Payout) {
+      return {
+        askId: ask.id,
+        status: ask.status,
+      };
+    }
+
+    if (ask.status !== AskStatus.MeetAndComplete) {
+      throw new BadRequestException('Ask must be marked complete before payment');
+    }
 
     let paymentIntent;
     try {
@@ -117,7 +132,7 @@ export class StripePaymentService {
     };
   }
 
-  private async findPayableAsk(authUserId: string, askId: string): Promise<Ask> {
+  private async findAskerOwnedAsk(authUserId: string, askId: string): Promise<Ask> {
     const ask = await this.asksRepo.findOne({ where: { id: askId } });
     if (!ask) {
       throw new NotFoundException('Ask not found');
@@ -127,15 +142,44 @@ export class StripePaymentService {
       throw new ForbiddenException('Only the asker can pay for this ask');
     }
 
-    if (ask.status !== AskStatus.MeetAndComplete) {
-      throw new BadRequestException('Ask must be marked complete before payment');
-    }
-
     if (!ask.doerId) {
       throw new BadRequestException('Ask has no assigned doer');
     }
 
     return ask;
+  }
+
+  private async findPayableAsk(authUserId: string, askId: string): Promise<Ask> {
+    const ask = await this.findAskerOwnedAsk(authUserId, askId);
+
+    if (ask.status !== AskStatus.MeetAndComplete) {
+      throw new BadRequestException('Ask must be marked complete before payment');
+    }
+
+    return ask;
+  }
+
+  private async findUserOrFail(userId: string): Promise<User> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  private toMerchantCountryCode(country: string, currency: string): string {
+    try {
+      return toIsoCountryCode(country);
+    } catch {
+      const currencyCountryMap: Record<string, string> = {
+        gbp: 'GB',
+        usd: 'US',
+        eur: 'IE',
+      };
+
+      return currencyCountryMap[currency.toLowerCase()] ?? 'GB';
+    }
   }
 
   private async findDoerOrFail(doerId: string | null): Promise<User> {
