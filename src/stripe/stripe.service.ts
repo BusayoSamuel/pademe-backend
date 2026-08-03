@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import Stripe from 'stripe';
 import { Repository } from 'typeorm';
 import { StripeKycStatus, User } from '../users/entities/user.entity';
 import { toIsoCountryCode } from '../common/country-iso.util';
@@ -71,6 +72,48 @@ export class StripeService {
       url: link.url,
       expiresAt: Math.floor(Date.now() / 1000) + 60,
     };
+  }
+
+  async disconnectConnectAccount(userId: string): Promise<ConnectStatusResponseDto> {
+    const user = await this.findUserOrFail(userId);
+
+    if (!user.stripeConnectAccountId) {
+      throw new BadRequestException('No Stripe account is connected.');
+    }
+
+    const accountId = user.stripeConnectAccountId;
+
+    try {
+      await this.stripe.accounts.del(accountId);
+    } catch (error) {
+      if (
+        error instanceof Stripe.errors.StripeError &&
+        error.code !== 'resource_missing'
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      if (!(error instanceof Stripe.errors.StripeError)) {
+        throw error;
+      }
+    }
+
+    user.stripeConnectAccountId = null;
+    user.stripeKycStatus = StripeKycStatus.None;
+    user.stripePayoutsEnabled = false;
+    user.stripeChargesEnabled = false;
+    user.stripeOnboardingCompletedAt = null;
+    const updated = await this.usersRepo.save(user);
+
+    return this.toStatusResponse(updated, {
+      kycStatus: StripeKycStatus.None,
+      payoutsEnabled: false,
+      chargesEnabled: false,
+      detailsSubmitted: false,
+      onboardingCompletedAt: null,
+      requirementsCurrentlyDue: [],
+      disabledReason: null,
+    });
   }
 
   async refreshConnectStatus(userId: string): Promise<ConnectStatusResponseDto> {

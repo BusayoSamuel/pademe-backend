@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -40,6 +40,17 @@ export class StripeController {
   @ApiCreatedResponse({ type: OnboardingLinkResponseDto })
   createDashboardLink(@CurrentUser() authUser: AuthUser) {
     return this.stripeService.createDashboardLink(authUser.id);
+  }
+
+  @Delete()
+  @ApiOperation({
+    summary: 'Disconnect Stripe Connect account',
+    description:
+      'Deletes the doer Express connected account in Stripe and clears local Connect/KYC state so onboarding can be started again.',
+  })
+  @ApiOkResponse({ type: ConnectStatusResponseDto })
+  disconnectConnectAccount(@CurrentUser() authUser: AuthUser) {
+    return this.stripeService.disconnectConnectAccount(authUser.id);
   }
 
   @Get('status')
