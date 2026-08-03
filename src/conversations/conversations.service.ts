@@ -5,10 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { StorageService } from '../storage/storage.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { UsersService } from '../users/users.service';
 import {
   toConversationResponse,
   toMessageResponse,
@@ -30,6 +31,7 @@ export class ConversationsService {
     private readonly asksRepo: Repository<Ask>,
     private readonly storage: StorageService,
     private readonly supabase: SupabaseService,
+    private readonly usersService: UsersService,
   ) {}
 
   async createForAsk(ask: Ask): Promise<ConversationResponseDto> {
@@ -65,7 +67,63 @@ export class ConversationsService {
       order: { lastMessageAt: 'DESC', createdAt: 'DESC' },
     });
 
-    return conversations.map(toConversationResponse);
+    if (conversations.length === 0) {
+      return [];
+    }
+
+    const askIds = [...new Set(conversations.map((item) => item.askId))];
+    const asks = await this.asksRepo.find({ where: { id: In(askIds) } });
+    const asksById = new Map(asks.map((ask) => [ask.id, ask]));
+
+    const counterpartIds = [
+      ...new Set(
+        conversations.map((item) =>
+          item.askerId === authUserId ? item.doerId : item.askerId,
+        ),
+      ),
+    ];
+
+    const counterparts = await Promise.all(
+      counterpartIds.map(async (id) => {
+        try {
+          const profile = await this.usersService.getPublicProfile(id);
+          return [id, profile] as const;
+        } catch {
+          return [id, null] as const;
+        }
+      }),
+    );
+    const counterpartsById = new Map(counterparts);
+
+    return conversations.map((conversation) => {
+      const ask = asksById.get(conversation.askId);
+      const counterpartId =
+        conversation.askerId === authUserId
+          ? conversation.doerId
+          : conversation.askerId;
+      const counterpart = counterpartsById.get(counterpartId);
+
+      return {
+        ...toConversationResponse(conversation),
+        askTitle: ask?.title ?? 'Ask',
+        askStatus: ask?.status,
+        myRole: conversation.askerId === authUserId ? 'asker' : 'doer',
+        counterpart: counterpart
+          ? {
+              id: counterpart.id,
+              firstName: counterpart.firstName,
+              lastName: counterpart.lastName,
+              profilePhotoUrl: counterpart.profilePhotoUrl,
+            }
+          : {
+              id: counterpartId,
+              firstName: 'Askapade',
+              lastName: 'member',
+              profilePhotoUrl: null,
+            },
+        unreadCount: 0,
+      };
+    });
   }
 
   async findByAskId(
