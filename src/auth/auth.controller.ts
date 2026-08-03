@@ -87,10 +87,10 @@ export class AuthController {
   })
   @ApiOkResponse({ type: AuthMessageResponseDto })
   resetPassword(
+    @CurrentUser() authUser: AuthUser,
     @Body() dto: ResetPasswordDto,
-    @Req() req: RequestWithUser,
   ) {
-    return this.authService.resetPassword(req.accessToken, dto);
+    return this.authService.resetPassword(authUser.id, dto);
   }
 
   @Public()

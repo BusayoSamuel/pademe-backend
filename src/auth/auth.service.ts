@@ -120,11 +120,11 @@ export class AuthService {
     };
   }
 
-  async resetPassword(accessToken: string, dto: ResetPasswordDto) {
-    const client = this.supabase.clientForUser(accessToken);
-    const { error } = await client.auth.updateUser({
-      password: dto.password,
-    });
+  async resetPassword(userId: string, dto: ResetPasswordDto) {
+    const { error } = await this.supabase.admin.auth.admin.updateUserById(
+      userId,
+      { password: dto.password },
+    );
 
     if (error) {
       throw new BadRequestException(
