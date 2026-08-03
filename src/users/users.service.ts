@@ -70,7 +70,7 @@ export class UsersService {
     });
 
     const saved = await this.usersRepo.save(user);
-    return this.mapUser(saved);
+    return await this.mapUser(saved);
   }
 
   async findByIdOrFail(id: string): Promise<User> {
@@ -97,33 +97,63 @@ export class UsersService {
     }
 
     const saved = await this.usersRepo.save(user);
-    return this.mapUser(saved);
+    return await this.mapUser(saved);
   }
 
   async uploadProfilePhoto(
     userId: string,
     file: Express.Multer.File,
   ): Promise<UserResponse> {
-    if (!file) {
+    if (!file?.buffer?.length) {
       throw new BadRequestException('file is required');
     }
 
     const user = await this.findByIdOrFail(userId);
     const bucket = this.supabase.defaultBucket;
-    const ext = file.originalname.split('.').pop() ?? 'jpg';
-    const path = `profiles/${userId}/avatar.${ext}`;
+    const rawExt = file.originalname.split('.').pop()?.toLowerCase() ?? 'jpg';
+    let ext = 'jpg';
+    if (rawExt === 'png' || rawExt === 'webp' || rawExt === 'heic') {
+      ext = rawExt;
+    } else if (rawExt === 'jpeg' || rawExt === 'jpg') {
+      ext = 'jpg';
+    }
 
-    await this.storage.upload(bucket, path, file.buffer, file.mimetype, {
+    const previousPath = user.profilePhotoPath;
+    // Unique path so clients never keep a stale CDN/cache hit for the same object name.
+    const path = `profiles/${userId}/avatar-${Date.now()}.${ext}`;
+
+    let contentType = 'image/jpeg';
+    if (file.mimetype?.startsWith('image/')) {
+      contentType = file.mimetype;
+    } else if (ext === 'png') {
+      contentType = 'image/png';
+    } else if (ext === 'webp') {
+      contentType = 'image/webp';
+    } else if (ext === 'heic') {
+      contentType = 'image/heic';
+    }
+
+    await this.storage.upload(bucket, path, file.buffer, contentType, {
       upsert: true,
     });
 
     user.profilePhotoPath = path;
     const saved = await this.usersRepo.save(user);
-    return this.mapUser(saved);
+
+    if (previousPath && previousPath !== path) {
+      try {
+        await this.storage.remove(bucket, [previousPath]);
+      } catch {
+        // Best-effort cleanup; new photo is already saved.
+      }
+    }
+
+    return await this.mapUser(saved);
   }
 
-  getMe(id: string): Promise<UserResponse> {
-    return this.findByIdOrFail(id).then((user) => this.mapUser(user));
+  async getMe(id: string): Promise<UserResponse> {
+    const user = await this.findByIdOrFail(id);
+    return this.mapUser(user);
   }
 
   async getPublicProfile(userId: string): Promise<PublicUserProfileDto> {
@@ -133,12 +163,12 @@ export class UsersService {
     });
 
     return {
-      ...this.mapUser(user),
+      ...(await this.mapUser(user)),
       completedAsksCount,
     };
   }
 
-  private mapUser(user: User): UserResponse {
+  private mapUser(user: User): Promise<UserResponse> {
     return toUserResponse(user, this.storage, this.supabase.defaultBucket);
   }
 }
