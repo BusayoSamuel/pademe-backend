@@ -47,11 +47,19 @@ export class ReviewsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List reviews for a user (reviewee)' })
-  @ApiQuery({ name: 'revieweeId', required: true, format: 'uuid' })
+  @ApiOperation({
+    summary: 'List reviews',
+    description:
+      'Provide either `revieweeId` (reviews received) or `reviewerId` (reviews given).',
+  })
+  @ApiQuery({ name: 'revieweeId', required: false, format: 'uuid' })
+  @ApiQuery({ name: 'reviewerId', required: false, format: 'uuid' })
   @ApiOkResponse({ type: ReviewResponseDto, isArray: true })
-  listByReviewee(@Query('revieweeId', ParseUUIDPipe) revieweeId: string) {
-    return this.reviewsService.findByRevieweeId(revieweeId);
+  list(
+    @Query('revieweeId') revieweeId?: string,
+    @Query('reviewerId') reviewerId?: string,
+  ) {
+    return this.reviewsService.list({ revieweeId, reviewerId });
   }
 
   @Get(':id')

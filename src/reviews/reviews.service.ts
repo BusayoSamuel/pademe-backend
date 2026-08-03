@@ -104,6 +104,35 @@ export class ReviewsService {
     return reviews.map((r) => this.mapReview(r));
   }
 
+  async findByReviewerId(reviewerId: string): Promise<ReviewResponseDto[]> {
+    const user = await this.usersRepo.findOne({ where: { id: reviewerId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const reviews = await this.reviewsRepo.find({
+      where: { reviewerId },
+      order: { createdAt: 'DESC' },
+    });
+
+    return reviews.map((r) => this.mapReview(r));
+  }
+
+  async list(params: {
+    revieweeId?: string;
+    reviewerId?: string;
+  }): Promise<ReviewResponseDto[]> {
+    if (params.revieweeId) {
+      return this.findByRevieweeId(params.revieweeId);
+    }
+
+    if (params.reviewerId) {
+      return this.findByReviewerId(params.reviewerId);
+    }
+
+    throw new BadRequestException('revieweeId or reviewerId is required');
+  }
+
   async update(
     authUserId: string,
     reviewId: string,
