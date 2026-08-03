@@ -49,12 +49,10 @@ export class CreateUserProfileDto {
   country: string;
 
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
   city: string;
 
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
   area: string;
 }
