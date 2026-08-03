@@ -31,6 +31,17 @@ export class StripeController {
     return this.stripeService.createOnboardingLink(authUser.id);
   }
 
+  @Post('dashboard')
+  @ApiOperation({
+    summary: 'Open Stripe Express dashboard',
+    description:
+      'Returns a single-use Express Dashboard login link so a connected doer can manage payouts and account details on Stripe.',
+  })
+  @ApiCreatedResponse({ type: OnboardingLinkResponseDto })
+  createDashboardLink(@CurrentUser() authUser: AuthUser) {
+    return this.stripeService.createDashboardLink(authUser.id);
+  }
+
   @Get('status')
   @ApiOperation({
     summary: 'Refresh Connect onboarding status',

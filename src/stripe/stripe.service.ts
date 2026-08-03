@@ -54,6 +54,25 @@ export class StripeService {
     };
   }
 
+  async createDashboardLink(userId: string): Promise<OnboardingLinkResponseDto> {
+    const user = await this.findUserOrFail(userId);
+
+    if (!user.stripeConnectAccountId) {
+      throw new BadRequestException('Connect your Stripe account before opening the dashboard.');
+    }
+
+    const link = await this.stripe.accounts.createLoginLink(user.stripeConnectAccountId);
+
+    if (!link.url) {
+      throw new InternalServerErrorException('Stripe did not return a dashboard URL');
+    }
+
+    return {
+      url: link.url,
+      expiresAt: Math.floor(Date.now() / 1000) + 60,
+    };
+  }
+
   async refreshConnectStatus(userId: string): Promise<ConnectStatusResponseDto> {
     const user = await this.findUserOrFail(userId);
 
