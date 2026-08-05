@@ -138,12 +138,12 @@ export class ConversationsService {
 
     const lastMessages = await this.messagesRepo
       .createQueryBuilder('message')
-      .distinctOn(['message.conversation_id'])
-      .where('message.conversation_id IN (:...conversationIds)', {
+      .distinctOn(['message.conversationId'])
+      .where('message.conversationId IN (:...conversationIds)', {
         conversationIds,
       })
-      .orderBy('message.conversation_id')
-      .addOrderBy('message.created_at', 'DESC')
+      .orderBy('message.conversationId')
+      .addOrderBy('message.createdAt', 'DESC')
       .getMany();
     const lastMessageByConversationId = new Map(
       lastMessages.map((message) => [message.conversationId, message]),
