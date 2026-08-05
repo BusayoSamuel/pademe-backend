@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { StorageService } from '../storage/storage.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { User } from '../users/entities/user.entity';
@@ -14,13 +15,15 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { toReviewResponse } from './review.mapper';
-import { Review } from './entities/review.entity';
+import { Review, ReviewType } from './entities/review.entity';
 
 @Injectable()
 export class ReviewsService {
   constructor(
     @InjectRepository(Review)
     private readonly reviewsRepo: Repository<Review>,
+    @InjectRepository(Ask)
+    private readonly asksRepo: Repository<Ask>,
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
     private readonly storage: StorageService,
@@ -37,6 +40,44 @@ export class ReviewsService {
 
     if (dto.revieweeId === dto.reviewerId) {
       throw new BadRequestException('Cannot review yourself');
+    }
+
+    const ask = await this.asksRepo.findOne({ where: { id: dto.askId } });
+    if (!ask) {
+      throw new NotFoundException('Ask not found');
+    }
+
+    if (
+      ask.status !== AskStatus.Payout &&
+      ask.status !== AskStatus.MeetAndComplete
+    ) {
+      throw new BadRequestException(
+        'Ask must be completed before leaving a review',
+      );
+    }
+
+    if (dto.type === ReviewType.Doer) {
+      if (ask.askerId !== dto.reviewerId) {
+        throw new ForbiddenException(
+          'Only the asker can leave a doer review for this ask',
+        );
+      }
+      if (!ask.doerId || ask.doerId !== dto.revieweeId) {
+        throw new BadRequestException(
+          'Reviewee must be the assigned askie for this ask',
+        );
+      }
+    } else {
+      if (ask.doerId !== dto.reviewerId) {
+        throw new ForbiddenException(
+          'Only the askie can leave an asker review for this ask',
+        );
+      }
+      if (ask.askerId !== dto.revieweeId) {
+        throw new BadRequestException(
+          'Reviewee must be the asker for this ask',
+        );
+      }
     }
 
     const reviewee = await this.usersRepo.findOne({
@@ -57,14 +98,13 @@ export class ReviewsService {
 
     const existing = await this.reviewsRepo.findOne({
       where: {
+        askId: dto.askId,
         reviewerId: dto.reviewerId,
-        revieweeId: dto.revieweeId,
-        type: dto.type,
       },
     });
     if (existing) {
       throw new ConflictException(
-        'You already submitted a review of this type for this user',
+        'You already submitted a review for this ask',
       );
     }
 
@@ -73,6 +113,7 @@ export class ReviewsService {
       notes: dto.notes,
       photoPath: dto.photoPath ?? null,
       type: dto.type,
+      askId: dto.askId,
       revieweeId: dto.revieweeId,
       reviewerId: dto.reviewerId,
     });

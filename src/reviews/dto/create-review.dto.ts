@@ -37,6 +37,13 @@ export class CreateReviewDto {
 
   @ApiProperty({
     format: 'uuid',
+    description: 'Ask this review is for',
+  })
+  @IsUUID()
+  askId: string;
+
+  @ApiProperty({
+    format: 'uuid',
     description: 'User being reviewed',
   })
   @IsUUID()

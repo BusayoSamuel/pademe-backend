@@ -18,6 +18,7 @@ export function toReviewResponse(
     photoPath: review.photoPath,
     photoUrl,
     type: review.type,
+    askId: review.askId,
     revieweeId: review.revieweeId,
     reviewerId: review.reviewerId,
     createdAt: review.createdAt,

@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Ask } from '../../asks/entities/ask.entity';
 import { User } from '../../users/entities/user.entity';
 
 export enum ReviewType {
@@ -31,11 +32,18 @@ export class Review {
   @Column({ type: 'text' })
   type: ReviewType;
 
+  @Column({ name: 'ask_id', type: 'uuid', nullable: true })
+  askId: string | null;
+
   @Column({ name: 'reviewee_id', type: 'uuid' })
   revieweeId: string;
 
   @Column({ name: 'reviewer_id', type: 'uuid' })
   reviewerId: string;
+
+  @ManyToOne(() => Ask, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'ask_id' })
+  ask: Ask | null;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'reviewee_id' })

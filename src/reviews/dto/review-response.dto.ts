@@ -20,6 +20,9 @@ export class ReviewResponseDto {
   @ApiProperty({ enum: ReviewType })
   type: ReviewType;
 
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  askId: string | null;
+
   @ApiProperty({ format: 'uuid' })
   revieweeId: string;
 
