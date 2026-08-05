@@ -48,14 +48,26 @@ export class AsksService {
     asks: Ask[],
     authUserId?: string,
   ): Promise<AskResponseDto[]> {
-    const likedIds = authUserId
-      ? await this.likesService.getLikedAskIds(
-          authUserId,
-          asks.map((ask) => ask.id),
-        )
-      : new Set<string>();
+    if (!authUserId || asks.length === 0) {
+      return asks.map((ask) => toAskResponse(ask));
+    }
 
-    return asks.map((ask) => toAskResponse(ask, likedIds.has(ask.id)));
+    const askIds = asks.map((ask) => ask.id);
+    const [likedIds, offeredRows] = await Promise.all([
+      this.likesService.getLikedAskIds(authUserId, askIds),
+      this.offersRepo
+        .createQueryBuilder('offer')
+        .select('offer.askId', 'askId')
+        .where('offer.doerId = :authUserId', { authUserId })
+        .andWhere('offer.askId IN (:...askIds)', { askIds })
+        .getRawMany<{ askId: string }>(),
+    ]);
+
+    const offeredIds = new Set(offeredRows.map((row) => row.askId));
+
+    return asks.map((ask) =>
+      toAskResponse(ask, likedIds.has(ask.id), offeredIds.has(ask.id)),
+    );
   }
 
   private async mapAsk(

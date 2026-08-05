@@ -59,6 +59,12 @@ export class AskResponseDto {
 
   @ApiProperty({
     example: false,
+    description: 'Whether the authenticated user has submitted an offer on this ask',
+  })
+  offeredByMe: boolean;
+
+  @ApiProperty({
+    example: false,
     description: 'Whether asker payment is held in escrow on the platform',
   })
   paymentHeld: boolean;

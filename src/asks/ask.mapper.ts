@@ -4,6 +4,7 @@ import { AskResponseDto } from './dto/ask-response.dto';
 export function toAskResponse(
   ask: Ask,
   likedByMe = false,
+  offeredByMe = false,
 ): AskResponseDto {
   return {
     id: ask.id,
@@ -22,6 +23,7 @@ export function toAskResponse(
     stripePriceId: ask.stripePriceId,
     likeCount: ask.likeCount ?? 0,
     likedByMe,
+    offeredByMe,
     paymentHeld: ask.paymentHeld ?? false,
     createdAt: ask.createdAt,
     updatedAt: ask.updatedAt,
