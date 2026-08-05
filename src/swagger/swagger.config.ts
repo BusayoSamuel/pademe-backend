@@ -25,6 +25,7 @@ export function buildSwaggerDocument(): Omit<OpenAPIObject, 'paths'> {
     .addTag('Asks', 'Tasks posted by askers for doers')
     .addTag('Conversations', 'Chat between asker and doer')
     .addTag('Offers', 'Doer offers on asks')
+    .addTag('Likes', 'Ask likes (hearts) in the feed')
     .addTag('Reviews', 'User reviews (doer or asker)')
     .addTag(
       'Stripe',

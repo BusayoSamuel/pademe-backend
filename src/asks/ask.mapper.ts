@@ -1,7 +1,10 @@
 import { Ask } from './entities/ask.entity';
 import { AskResponseDto } from './dto/ask-response.dto';
 
-export function toAskResponse(ask: Ask): AskResponseDto {
+export function toAskResponse(
+  ask: Ask,
+  likedByMe = false,
+): AskResponseDto {
   return {
     id: ask.id,
     title: ask.title,
@@ -17,6 +20,8 @@ export function toAskResponse(ask: Ask): AskResponseDto {
     doerId: ask.doerId,
     stripeProductId: ask.stripeProductId,
     stripePriceId: ask.stripePriceId,
+    likeCount: ask.likeCount ?? 0,
+    likedByMe,
     createdAt: ask.createdAt,
     updatedAt: ask.updatedAt,
   };

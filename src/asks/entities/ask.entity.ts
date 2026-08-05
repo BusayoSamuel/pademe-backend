@@ -67,6 +67,9 @@ export class Ask {
   @Column({ name: 'stripe_price_id', type: 'text', nullable: true })
   stripePriceId: string | null;
 
+  @Column({ name: 'like_count', type: 'int', default: 0 })
+  likeCount: number;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'asker_id' })
   asker: User;

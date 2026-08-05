@@ -79,15 +79,21 @@ export class AsksController {
     description: 'Browse asks with optional status filter and pagination.',
   })
   @ApiOkResponse({ type: AskResponseDto, isArray: true })
-  findAll(@Query() query: ListAsksQueryDto) {
-    return this.asksService.findAll(query);
+  findAll(
+    @CurrentUser() authUser: AuthUser,
+    @Query() query: ListAsksQueryDto,
+  ) {
+    return this.asksService.findAll(query, authUser.id);
   }
 
   @Get(':askId')
   @ApiOperation({ summary: 'Get ask by id' })
   @ApiOkResponse({ type: AskResponseDto })
-  findOne(@Param('askId', ParseUUIDPipe) askId: string) {
-    return this.asksService.findOne(askId);
+  findOne(
+    @CurrentUser() authUser: AuthUser,
+    @Param('askId', ParseUUIDPipe) askId: string,
+  ) {
+    return this.asksService.findOne(askId, authUser.id);
   }
 
   @Patch(':askId/status')

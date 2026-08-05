@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { LikesModule } from '../likes/likes.module';
 import { Offer } from '../offers/entities/offer.entity';
 import { StripeModule } from '../stripe/stripe.module';
 import { User } from '../users/entities/user.entity';
@@ -13,6 +14,7 @@ import { AsksService } from './asks.service';
     TypeOrmModule.forFeature([Ask, User, Offer]),
     ConversationsModule,
     StripeModule,
+    LikesModule,
   ],
   controllers: [AsksController],
   providers: [AsksService],

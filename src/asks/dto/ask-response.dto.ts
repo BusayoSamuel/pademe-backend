@@ -48,6 +48,15 @@ export class AskResponseDto {
   })
   stripePriceId: string | null;
 
+  @ApiProperty({ example: 3, description: 'Number of likes on this ask' })
+  likeCount: number;
+
+  @ApiProperty({
+    example: false,
+    description: 'Whether the authenticated user has liked this ask',
+  })
+  likedByMe: boolean;
+
   @ApiProperty()
   createdAt: Date;
 

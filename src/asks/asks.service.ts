@@ -9,6 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { ConversationsService } from '../conversations/conversations.service';
+import { LikesService } from '../likes/likes.service';
 import { Offer } from '../offers/entities/offer.entity';
 import { StripeAskProductService } from '../stripe/stripe-ask-product.service';
 import { User } from '../users/entities/user.entity';
@@ -40,7 +41,30 @@ export class AsksService {
     private readonly offersRepo: Repository<Offer>,
     private readonly conversationsService: ConversationsService,
     private readonly stripeAskProductService: StripeAskProductService,
+    private readonly likesService: LikesService,
   ) {}
+
+  private async mapAsks(
+    asks: Ask[],
+    authUserId?: string,
+  ): Promise<AskResponseDto[]> {
+    const likedIds = authUserId
+      ? await this.likesService.getLikedAskIds(
+          authUserId,
+          asks.map((ask) => ask.id),
+        )
+      : new Set<string>();
+
+    return asks.map((ask) => toAskResponse(ask, likedIds.has(ask.id)));
+  }
+
+  private async mapAsk(
+    ask: Ask,
+    authUserId?: string,
+  ): Promise<AskResponseDto> {
+    const [mapped] = await this.mapAsks([ask], authUserId);
+    return mapped;
+  }
 
   async create(authUserId: string, dto: CreateAskDto): Promise<AskResponseDto> {
     if (dto.askerId !== authUserId) {
@@ -68,6 +92,7 @@ export class AsksService {
       doerId: null,
       stripeProductId: null,
       stripePriceId: null,
+      likeCount: 0,
     });
 
     const saved = await this.asksRepo.save(ask);
@@ -77,7 +102,7 @@ export class AsksService {
       saved.stripeProductId = refs.productId;
       saved.stripePriceId = refs.priceId;
       const withStripe = await this.asksRepo.save(saved);
-      return toAskResponse(withStripe);
+      return this.mapAsk(withStripe, authUserId);
     } catch {
       await this.asksRepo.remove(saved);
       throw new InternalServerErrorException(
@@ -86,7 +111,10 @@ export class AsksService {
     }
   }
 
-  async findAll(query: ListAsksQueryDto): Promise<AskResponseDto[]> {
+  async findAll(
+    query: ListAsksQueryDto,
+    authUserId?: string,
+  ): Promise<AskResponseDto[]> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where: FindOptionsWhere<Ask> = {};
@@ -101,15 +129,15 @@ export class AsksService {
       take: limit,
     });
 
-    return asks.map(toAskResponse);
+    return this.mapAsks(asks, authUserId);
   }
 
-  async findOne(askId: string): Promise<AskResponseDto> {
+  async findOne(askId: string, authUserId?: string): Promise<AskResponseDto> {
     const ask = await this.asksRepo.findOne({ where: { id: askId } });
     if (!ask) {
       throw new NotFoundException('Ask not found');
     }
-    return toAskResponse(ask);
+    return this.mapAsk(ask, authUserId);
   }
 
   async findMyAsks(authUserId: string): Promise<AskResponseDto[]> {
@@ -117,7 +145,7 @@ export class AsksService {
       where: { askerId: authUserId },
       order: { datePosted: 'DESC' },
     });
-    return asks.map(toAskResponse);
+    return this.mapAsks(asks, authUserId);
   }
 
   async findMyJobs(authUserId: string): Promise<AskResponseDto[]> {
@@ -125,7 +153,7 @@ export class AsksService {
       where: { doerId: authUserId },
       order: { updatedAt: 'DESC' },
     });
-    return asks.map(toAskResponse);
+    return this.mapAsks(asks, authUserId);
   }
 
   async update(
@@ -172,7 +200,7 @@ export class AsksService {
       saved.stripeProductId = refs.productId;
       saved.stripePriceId = refs.priceId;
       const withStripe = await this.asksRepo.save(saved);
-      return toAskResponse(withStripe);
+      return this.mapAsk(withStripe, authUserId);
     } catch {
       throw new InternalServerErrorException(
         'Failed to sync Stripe product for ask',
@@ -194,7 +222,7 @@ export class AsksService {
 
     ask.status = dto.status;
     const saved = await this.asksRepo.save(ask);
-    return toAskResponse(saved);
+    return this.mapAsk(saved, authUserId);
   }
 
   async chooseOffer(
@@ -233,7 +261,7 @@ export class AsksService {
 
     const saved = await this.asksRepo.save(ask);
     await this.conversationsService.createForAsk(saved);
-    return toAskResponse(saved);
+    return this.mapAsk(saved, authUserId);
   }
 
   async remove(

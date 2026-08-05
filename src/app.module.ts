@@ -9,6 +9,7 @@ import { StorageModule } from './storage/storage.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AsksModule } from './asks/asks.module';
 import { ConversationsModule } from './conversations/conversations.module';
+import { LikesModule } from './likes/likes.module';
 import { OffersModule } from './offers/offers.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { StripeModule } from './stripe/stripe.module';
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     AsksModule,
     ConversationsModule,
     OffersModule,
+    LikesModule,
     ReviewsModule,
     StripeModule,
   ],
