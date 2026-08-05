@@ -13,6 +13,9 @@ export class OfferResponseDto {
   @ApiProperty()
   note: string;
 
+  @ApiProperty({ example: 150 })
+  amount: number;
+
   @ApiProperty()
   createdAt: Date;
 

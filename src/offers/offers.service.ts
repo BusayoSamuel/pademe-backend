@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -25,6 +26,12 @@ export class OffersService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
+  private assertOfferAmount(amount: number): void {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Offer amount must be greater than 0');
+    }
+  }
+
   async create(
     authUserId: string,
     dto: CreateOfferDto,
@@ -36,6 +43,12 @@ export class OffersService {
     const ask = await this.asksRepo.findOne({ where: { id: dto.askId } });
     if (!ask) {
       throw new NotFoundException('Ask not found');
+    }
+
+    if (ask.status !== AskStatus.Posted) {
+      throw new ConflictException(
+        'Offers can only be submitted while ask status is posted',
+      );
     }
 
     if (ask.askerId === dto.doerId) {
@@ -51,6 +64,8 @@ export class OffersService {
       );
     }
 
+    this.assertOfferAmount(dto.amount);
+
     const existing = await this.offersRepo.findOne({
       where: { askId: dto.askId, doerId: dto.doerId },
     });
@@ -64,6 +79,7 @@ export class OffersService {
       askId: dto.askId,
       doerId: dto.doerId,
       note: dto.note,
+      amount: dto.amount.toFixed(2),
     });
 
     const saved = await this.offersRepo.save(offer);
@@ -106,7 +122,28 @@ export class OffersService {
       throw new ForbiddenException('Only the doer can update this offer');
     }
 
-    offer.note = dto.note;
+    if (dto.note === undefined && dto.amount === undefined) {
+      throw new BadRequestException('Provide note and/or amount to update');
+    }
+
+    if (dto.amount !== undefined) {
+      const ask = await this.asksRepo.findOne({ where: { id: offer.askId } });
+      if (!ask) {
+        throw new NotFoundException('Ask not found');
+      }
+      if (ask.status !== AskStatus.Posted) {
+        throw new ConflictException(
+          'Offer can only be updated while ask status is posted',
+        );
+      }
+      this.assertOfferAmount(dto.amount);
+      offer.amount = dto.amount.toFixed(2);
+    }
+
+    if (dto.note !== undefined) {
+      offer.note = dto.note;
+    }
+
     const saved = await this.offersRepo.save(offer);
     return toOfferResponse(saved);
   }

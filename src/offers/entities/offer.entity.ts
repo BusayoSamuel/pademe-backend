@@ -24,6 +24,9 @@ export class Offer {
   @Column({ type: 'text' })
   note: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  amount: string;
+
   @ManyToOne(() => Ask, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ask_id' })
   ask: Ask;

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateOfferDto {
   @ApiProperty({ format: 'uuid' })
@@ -18,4 +25,12 @@ export class CreateOfferDto {
   @IsNotEmpty()
   @MaxLength(2000)
   note: string;
+
+  @ApiProperty({
+    example: 150,
+    description: 'Offer amount; must be greater than 0',
+  })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  amount: number;
 }

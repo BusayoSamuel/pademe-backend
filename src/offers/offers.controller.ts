@@ -35,7 +35,7 @@ export class OffersController {
   @ApiOperation({
     summary: 'Create an offer on an ask',
     description:
-      'Doer submits an offer. `doerId` must match the Bearer token. One offer per doer per ask.',
+      'Doer submits an offer with a note and amount (must be > 0). `doerId` must match the Bearer token. One offer per doer per ask.',
   })
   @ApiCreatedResponse({ type: OfferResponseDto })
   create(@CurrentUser() authUser: AuthUser, @Body() dto: CreateOfferDto) {
@@ -58,7 +58,7 @@ export class OffersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update offer note (doer only)' })
+  @ApiOperation({ summary: 'Update offer note and/or amount (doer only)' })
   @ApiOkResponse({ type: OfferResponseDto })
   updateNote(
     @CurrentUser() authUser: AuthUser,

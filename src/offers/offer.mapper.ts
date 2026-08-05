@@ -7,6 +7,7 @@ export function toOfferResponse(offer: Offer): OfferResponseDto {
     askId: offer.askId,
     doerId: offer.doerId,
     note: offer.note,
+    amount: Number(offer.amount),
     createdAt: offer.createdAt,
     updatedAt: offer.updatedAt,
   };
