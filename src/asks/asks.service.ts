@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { ConversationsService } from '../conversations/conversations.service';
 import { LikesService } from '../likes/likes.service';
 import { Offer } from '../offers/entities/offer.entity';
@@ -55,12 +55,10 @@ export class AsksService {
     const askIds = asks.map((ask) => ask.id);
     const [likedIds, offeredRows] = await Promise.all([
       this.likesService.getLikedAskIds(authUserId, askIds),
-      this.offersRepo
-        .createQueryBuilder('offer')
-        .select('offer.askId', 'askId')
-        .where('offer.doerId = :authUserId', { authUserId })
-        .andWhere('offer.askId IN (:...askIds)', { askIds })
-        .getRawMany<{ askId: string }>(),
+      this.offersRepo.find({
+        where: { doerId: authUserId, askId: In(askIds) },
+        select: ['askId'],
+      }),
     ]);
 
     const offeredIds = new Set(offeredRows.map((row) => row.askId));
