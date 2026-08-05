@@ -138,7 +138,7 @@ export class ConversationsService {
     }
 
     this.assertParticipant(conversation, authUserId);
-    return toConversationResponse(conversation);
+    return this.toEnrichedConversation(conversation, authUserId);
   }
 
   async findById(
@@ -153,7 +153,48 @@ export class ConversationsService {
     }
 
     this.assertParticipant(conversation, authUserId);
-    return toConversationResponse(conversation);
+    return this.toEnrichedConversation(conversation, authUserId);
+  }
+
+  private async toEnrichedConversation(
+    conversation: Conversation,
+    authUserId: string,
+  ): Promise<ConversationResponseDto> {
+    const ask = await this.asksRepo.findOne({
+      where: { id: conversation.askId },
+    });
+    const counterpartId =
+      conversation.askerId === authUserId
+        ? conversation.doerId
+        : conversation.askerId;
+
+    let counterpart: ConversationResponseDto['counterpart'] = {
+      id: counterpartId,
+      firstName: 'Askapade',
+      lastName: 'member',
+      profilePhotoUrl: null,
+    };
+
+    try {
+      const profile = await this.usersService.getPublicProfile(counterpartId);
+      counterpart = {
+        id: profile.id,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        profilePhotoUrl: profile.profilePhotoUrl,
+      };
+    } catch {
+      // Keep placeholder counterpart when profile lookup fails.
+    }
+
+    return {
+      ...toConversationResponse(conversation),
+      askTitle: ask?.title ?? 'Ask',
+      askStatus: ask?.status,
+      myRole: conversation.askerId === authUserId ? 'asker' : 'doer',
+      counterpart,
+      unreadCount: 0,
+    };
   }
 
   async listMessages(
