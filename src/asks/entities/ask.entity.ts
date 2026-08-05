@@ -70,6 +70,27 @@ export class Ask {
   @Column({ name: 'like_count', type: 'int', default: 0 })
   likeCount: number;
 
+  @Column({ name: 'stripe_payment_intent_id', type: 'text', nullable: true })
+  stripePaymentIntentId: string | null;
+
+  @Column({ name: 'payment_held', type: 'boolean', default: false })
+  paymentHeld: boolean;
+
+  @Column({ name: 'askie_fee_amount', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  askieFeeAmount: string | null;
+
+  @Column({
+    name: 'platform_fee_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
+  platformFeeAmount: string | null;
+
+  @Column({ name: 'stripe_transfer_id', type: 'text', nullable: true })
+  stripeTransferId: string | null;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'asker_id' })
   asker: User;

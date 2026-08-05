@@ -5,6 +5,12 @@ export class ConfirmPaymentSheetResponseDto {
   @ApiProperty({ format: 'uuid' })
   askId: string;
 
-  @ApiProperty({ enum: AskStatus, example: AskStatus.Payout })
+  @ApiProperty({ enum: AskStatus })
   status: AskStatus;
+
+  @ApiProperty({
+    required: false,
+    description: 'Present after confirm hold; true when funds are escrowed',
+  })
+  paymentHeld?: boolean;
 }

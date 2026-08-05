@@ -10,6 +10,7 @@ import {
   Length,
   Matches,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { AskUrgency } from '../entities/ask.entity';
 
@@ -32,9 +33,10 @@ export class CreateAskDto {
   @MaxLength(500)
   location: string;
 
-  @ApiProperty({ example: 15000 })
+  @ApiProperty({ example: 50, description: 'Askie fee; minimum 10' })
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
+  @Min(10)
   amount: number;
 
   @ApiProperty({

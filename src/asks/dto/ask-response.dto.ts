@@ -57,6 +57,12 @@ export class AskResponseDto {
   })
   likedByMe: boolean;
 
+  @ApiProperty({
+    example: false,
+    description: 'Whether asker payment is held in escrow on the platform',
+  })
+  paymentHeld: boolean;
+
   @ApiProperty()
   createdAt: Date;
 

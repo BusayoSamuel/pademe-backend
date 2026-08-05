@@ -22,6 +22,7 @@ export function toAskResponse(
     stripePriceId: ask.stripePriceId,
     likeCount: ask.likeCount ?? 0,
     likedByMe,
+    paymentHeld: ask.paymentHeld ?? false,
     createdAt: ask.createdAt,
     updatedAt: ask.updatedAt,
   };

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import Stripe from 'stripe';
 import { Ask } from '../asks/entities/ask.entity';
+import { Offer } from '../offers/entities/offer.entity';
 import { User } from '../users/entities/user.entity';
 import { StripeAskProductService } from './stripe-ask-product.service';
 import { STRIPE_CLIENT } from './stripe.constants';
@@ -14,7 +15,7 @@ import { StripeService } from './stripe.service';
 import { StripeWebhookController } from './stripe-webhook.controller';
 
 @Module({
-  imports: [ConfigModule, TypeOrmModule.forFeature([User, Ask])],
+  imports: [ConfigModule, TypeOrmModule.forFeature([User, Ask, Offer])],
   controllers: [
     StripeController,
     StripePaymentController,

@@ -13,6 +13,7 @@ import { ConfirmPaymentSheetDto } from './dto/confirm-payment-sheet.dto';
 import { ConfirmPaymentSheetResponseDto } from './dto/confirm-payment-sheet-response.dto';
 import { CreatePaymentSheetDto } from './dto/create-payment-sheet.dto';
 import { PaymentSheetResponseDto } from './dto/payment-sheet-response.dto';
+import { ReleasePayoutDto } from './dto/release-payout.dto';
 import { StripePaymentService } from './stripe-payment.service';
 
 @ApiTags('Stripe')
@@ -23,12 +24,12 @@ export class StripePaymentController {
 
   @Post()
   @ApiOperation({
-    summary: 'Create Payment Sheet params for an ask',
+    summary: 'Create Payment Sheet params to hold ask payment',
     description:
-      'Asker only. Ask must be `meet_complete` with an assigned doer who has completed Stripe Connect onboarding. ' +
-      'Creates a Connect destination charge for the ask budget via the mobile Payment Sheet. ' +
-      'Returns params for the mobile Payment Sheet, including `merchantCountryCode` for Apple Pay. ' +
-      'After the client payment succeeds, call `POST /stripe/payment-sheet/confirm`.',
+      'Asker only. Ask must have an assigned doer (`waiting` or later) and no held payment yet. ' +
+      'Charges askie fee + platform fee to the platform (escrow). ' +
+      'After the client payment succeeds, call `POST /stripe/payment-sheet/confirm`. ' +
+      'Release to the doer later with `POST /stripe/payment-sheet/release` after `meet_complete`.',
   })
   @ApiCreatedResponse({ type: PaymentSheetResponseDto })
   createPaymentSheet(
@@ -40,9 +41,10 @@ export class StripePaymentController {
 
   @Post('confirm')
   @ApiOperation({
-    summary: 'Confirm ask payout after Payment Sheet succeeds',
+    summary: 'Confirm escrow hold after Payment Sheet succeeds',
     description:
-      'Asker only. Verifies the PaymentIntent succeeded, matches it to the ask, and advances ask status to `payout`.',
+      'Asker only. Verifies the PaymentIntent succeeded and marks payment as held on the platform. ' +
+      'Does not transfer to the doer yet.',
   })
   @ApiOkResponse({ type: ConfirmPaymentSheetResponseDto })
   confirmPaymentSheet(
@@ -50,5 +52,21 @@ export class StripePaymentController {
     @Body() dto: ConfirmPaymentSheetDto,
   ) {
     return this.stripePaymentService.confirmPaymentSheet(authUser.id, dto);
+  }
+
+  @Post('release')
+  @ApiOperation({
+    summary: 'Release held payout to the doer',
+    description:
+      'Asker only. Ask must be `meet_complete` with a held payment. ' +
+      'Transfers the askie fee to the doer’s Connect account and sets status to `payout`. ' +
+      'Platform fee remains on the platform.',
+  })
+  @ApiOkResponse({ type: ConfirmPaymentSheetResponseDto })
+  releasePayout(
+    @CurrentUser() authUser: AuthUser,
+    @Body() dto: ReleasePayoutDto,
+  ) {
+    return this.stripePaymentService.releasePayout(authUser.id, dto.askId);
   }
 }
