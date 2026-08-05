@@ -4,6 +4,9 @@ import { MessageResponseDto } from './dto/message-response.dto';
 import { Conversation } from './entities/conversation.entity';
 import { Message } from './entities/message.entity';
 
+/** Signed URL lifetime for chat attachment previews. */
+const ATTACHMENT_SIGNED_URL_SECONDS = 60 * 60 * 24; // 24 hours
+
 export function toConversationResponse(
   conversation: Conversation,
 ): ConversationResponseDto {
@@ -18,14 +21,25 @@ export function toConversationResponse(
   };
 }
 
-export function toMessageResponse(
+export async function toMessageResponse(
   message: Message,
   storage: StorageService,
   bucket: string,
-): MessageResponseDto {
-  const attachmentUrl = message.attachmentPath
-    ? storage.getPublicUrl(bucket, message.attachmentPath)
-    : null;
+): Promise<MessageResponseDto> {
+  let attachmentUrl: string | null = null;
+
+  if (message.attachmentPath) {
+    try {
+      // Bucket is private — public URLs 404; clients need signed URLs.
+      attachmentUrl = await storage.createSignedUrl(
+        bucket,
+        message.attachmentPath,
+        ATTACHMENT_SIGNED_URL_SECONDS,
+      );
+    } catch {
+      attachmentUrl = null;
+    }
+  }
 
   return {
     id: message.id,

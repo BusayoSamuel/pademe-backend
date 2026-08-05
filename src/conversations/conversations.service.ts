@@ -212,8 +212,10 @@ export class ConversationsService {
       take,
     });
 
-    return messages.map((m) =>
-      toMessageResponse(m, this.storage, this.supabase.defaultBucket),
+    return Promise.all(
+      messages.map((m) =>
+        toMessageResponse(m, this.storage, this.supabase.defaultBucket),
+      ),
     );
   }
 
