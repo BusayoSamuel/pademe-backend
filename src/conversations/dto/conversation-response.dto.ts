@@ -40,6 +40,12 @@ export class ConversationResponseDto {
   @ApiPropertyOptional({ description: 'Ask title for inbox preview' })
   askTitle?: string;
 
+  @ApiPropertyOptional({
+    description: 'Preview of the latest message body for the inbox list',
+    nullable: true,
+  })
+  lastMessagePreview?: string | null;
+
   @ApiPropertyOptional({ enum: AskStatus })
   askStatus?: AskStatus;
 

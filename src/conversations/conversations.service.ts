@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, MoreThan, Not, Repository } from 'typeorm';
 import { Ask, AskStatus } from '../asks/entities/ask.entity';
 import { StorageService } from '../storage/storage.service';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -19,6 +19,44 @@ import { ConversationResponseDto } from './dto/conversation-response.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { Conversation } from './entities/conversation.entity';
 import { Message } from './entities/message.entity';
+
+const LOCATION_PREFIX = '__askapade_location__';
+const IMAGE_EXTENSIONS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'heic',
+  'heif',
+]);
+
+function isImageAttachment(path: string | null | undefined): boolean {
+  if (!path) return false;
+  const clean = path.split('?')[0] ?? path;
+  const ext = clean.split('.').pop()?.toLowerCase() ?? '';
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+function toLastMessagePreview(
+  body: string,
+  attachmentPath: string | null,
+): string {
+  if (body.trim().startsWith(LOCATION_PREFIX)) {
+    return 'Shared location';
+  }
+
+  if (attachmentPath) {
+    if (isImageAttachment(attachmentPath)) {
+      return 'Photo';
+    }
+    const fileName = body.split('\n')[0]?.trim();
+    return fileName || 'Attachment';
+  }
+
+  const trimmed = body.trim();
+  return trimmed || 'Message';
+}
 
 @Injectable()
 export class ConversationsService {
@@ -53,6 +91,8 @@ export class ConversationsService {
       askerId: ask.askerId,
       doerId: ask.doerId,
       lastMessageAt: null,
+      askerLastReadAt: null,
+      doerLastReadAt: null,
     });
 
     const saved = await this.conversationsRepo.save(conversation);
@@ -71,6 +111,7 @@ export class ConversationsService {
       return [];
     }
 
+    const conversationIds = conversations.map((item) => item.id);
     const askIds = [...new Set(conversations.map((item) => item.askId))];
     const asks = await this.asksRepo.find({ where: { id: In(askIds) } });
     const asksById = new Map(asks.map((ask) => [ask.id, ask]));
@@ -95,6 +136,43 @@ export class ConversationsService {
     );
     const counterpartsById = new Map(counterparts);
 
+    const lastMessages = await this.messagesRepo
+      .createQueryBuilder('message')
+      .distinctOn(['message.conversation_id'])
+      .where('message.conversation_id IN (:...conversationIds)', {
+        conversationIds,
+      })
+      .orderBy('message.conversation_id')
+      .addOrderBy('message.created_at', 'DESC')
+      .getMany();
+    const lastMessageByConversationId = new Map(
+      lastMessages.map((message) => [message.conversationId, message]),
+    );
+
+    const unreadByConversationId = new Map<string, number>();
+    await Promise.all(
+      conversations.map(async (conversation) => {
+        const lastReadAt =
+          conversation.askerId === authUserId
+            ? conversation.askerLastReadAt
+            : conversation.doerLastReadAt;
+
+        const where = lastReadAt
+          ? {
+              conversationId: conversation.id,
+              senderId: Not(authUserId),
+              createdAt: MoreThan(lastReadAt),
+            }
+          : {
+              conversationId: conversation.id,
+              senderId: Not(authUserId),
+            };
+
+        const count = await this.messagesRepo.count({ where });
+        unreadByConversationId.set(conversation.id, count);
+      }),
+    );
+
     return conversations.map((conversation) => {
       const ask = asksById.get(conversation.askId);
       const counterpartId =
@@ -102,6 +180,7 @@ export class ConversationsService {
           ? conversation.doerId
           : conversation.askerId;
       const counterpart = counterpartsById.get(counterpartId);
+      const lastMessage = lastMessageByConversationId.get(conversation.id);
 
       return {
         ...toConversationResponse(conversation),
@@ -121,7 +200,10 @@ export class ConversationsService {
               lastName: 'member',
               profilePhotoUrl: null,
             },
-        unreadCount: 0,
+        lastMessagePreview: lastMessage
+          ? toLastMessagePreview(lastMessage.body, lastMessage.attachmentPath)
+          : null,
+        unreadCount: unreadByConversationId.get(conversation.id) ?? 0,
       };
     });
   }
@@ -187,13 +269,37 @@ export class ConversationsService {
       // Keep placeholder counterpart when profile lookup fails.
     }
 
+    const lastMessage = await this.messagesRepo.findOne({
+      where: { conversationId: conversation.id },
+      order: { createdAt: 'DESC' },
+    });
+
+    const lastReadAt =
+      conversation.askerId === authUserId
+        ? conversation.askerLastReadAt
+        : conversation.doerLastReadAt;
+    const unreadWhere = lastReadAt
+      ? {
+          conversationId: conversation.id,
+          senderId: Not(authUserId),
+          createdAt: MoreThan(lastReadAt),
+        }
+      : {
+          conversationId: conversation.id,
+          senderId: Not(authUserId),
+        };
+    const unreadCount = await this.messagesRepo.count({ where: unreadWhere });
+
     return {
       ...toConversationResponse(conversation),
       askTitle: ask?.title ?? 'Ask',
       askStatus: ask?.status,
       myRole: conversation.askerId === authUserId ? 'asker' : 'doer',
       counterpart,
-      unreadCount: 0,
+      lastMessagePreview: lastMessage
+        ? toLastMessagePreview(lastMessage.body, lastMessage.attachmentPath)
+        : null,
+      unreadCount,
     };
   }
 
@@ -211,6 +317,8 @@ export class ConversationsService {
       order: { createdAt: 'ASC' },
       take,
     });
+
+    await this.markConversationRead(conversation, authUserId);
 
     return Promise.all(
       messages.map((m) =>
@@ -237,7 +345,7 @@ export class ConversationsService {
     const saved = await this.messagesRepo.save(message);
 
     conversation.lastMessageAt = saved.createdAt;
-    await this.conversationsRepo.save(conversation);
+    await this.markConversationRead(conversation, authUserId);
 
     const ask = await this.asksRepo.findOne({
       where: { id: conversation.askId },
@@ -252,6 +360,19 @@ export class ConversationsService {
     }
 
     return toMessageResponse(saved, this.storage, this.supabase.defaultBucket);
+  }
+
+  private async markConversationRead(
+    conversation: Conversation,
+    authUserId: string,
+  ): Promise<void> {
+    const now = new Date();
+    if (conversation.askerId === authUserId) {
+      conversation.askerLastReadAt = now;
+    } else if (conversation.doerId === authUserId) {
+      conversation.doerLastReadAt = now;
+    }
+    await this.conversationsRepo.save(conversation);
   }
 
   private async getConversationOrFail(

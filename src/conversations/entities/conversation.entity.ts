@@ -29,6 +29,12 @@ export class Conversation {
   @Column({ name: 'last_message_at', type: 'timestamptz', nullable: true })
   lastMessageAt: Date | null;
 
+  @Column({ name: 'asker_last_read_at', type: 'timestamptz', nullable: true })
+  askerLastReadAt: Date | null;
+
+  @Column({ name: 'doer_last_read_at', type: 'timestamptz', nullable: true })
+  doerLastReadAt: Date | null;
+
   @ManyToOne(() => Ask, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ask_id' })
   ask: Ask;
